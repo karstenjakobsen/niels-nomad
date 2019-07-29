@@ -1,0 +1,15 @@
+[Unit]
+Description=VMware Tools Agent
+Documentation=https://github.com/vmware/open-vm-tools
+ConditionVirtualization=vmware
+
+[Service]
+ExecStartPre=/usr/bin/ln -sfT /usr/share/oem/vmware-tools /etc/vmware-tools
+ExecStart=/usr/share/oem/bin/vmtoolsd
+TimeoutStopSec=5
+TimeoutStartSec=5
+PrivateTmp=true
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

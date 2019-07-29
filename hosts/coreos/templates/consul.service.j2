@@ -1,0 +1,23 @@
+[Unit]
+After=docker.device
+Requires=docker.service
+
+[Service]
+ExecStartPre=/bin/sh -c 'until ping -c1 {{ipv4_gateway}}; do sleep 1; done;'
+ExecStartPre=-/usr/bin/docker rm -f consul
+
+{% if is_consul_server == true %}
+ExecStart=docker run --net=host --rm --name=consul -v consul-volume:/consul/data consul:1.5.2 agent -server -ui -bootstrap -datacenter nyb1 -bind="{{ipv4_address}}" -client="{{ipv4_address}}" -recursor 8.8.8.8 -recursor 8.8.4.4
+{% else %}
+ExecStart=docker run --net=host --rm --name=consul -v consul-volume:/consul/data consul:1.5.2 agent -datacenter nyb1 -retry-join "10.0.0.10" -client="{{ipv4_address}}" -bind="{{ipv4_address}}"
+{% endif %}
+
+ExecStop=/usr/bin/docker stop consul
+# Ensure log messages are correctly tagged in the system log.
+SyslogIdentifier=consul
+# Auto-Restart the container after a crash.
+Restart=always
+
+[Install]
+# make sure service is started after docker is up
+WantedBy=docker.service

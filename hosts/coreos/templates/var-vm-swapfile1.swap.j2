@@ -1,0 +1,10 @@
+[Unit]
+Description=Turn on swap
+Requires=create-swapfile.service
+After=create-swapfile.service
+
+[Swap]
+What=/var/vm/swapfile1
+
+[Install]
+WantedBy=multi-user.target

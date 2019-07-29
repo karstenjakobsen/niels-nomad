@@ -1,0 +1,17 @@
+[Unit]
+Description=Unlink resolved
+# Define dependencies
+After=systemd-resolved.service
+Requires=systemd-resolved.service
+
+[Service]
+Type=oneshot
+ExecStartPre=-/bin/unlink /etc/resolv.conf
+ExecStartPre=-/usr/bin/touch /etc/resolv.conf
+ExecStart=/usr/bin/bash -c '/usr/bin/echo "nameserver 127.0.0.1" > /etc/resolv.conf'
+ExecStart=/usr/bin/bash -c '/usr/bin/echo "nameserver 8.8.8.8" >> /etc/resolv.conf'
+ExecStart=/usr/bin/bash -c '/usr/bin/echo "nameserver 8.8.4.4" >> /etc/resolv.conf'
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target

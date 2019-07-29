@@ -1,0 +1,24 @@
+[Unit]
+Description=Dnsmasq
+After=systemd-networkd-wait-online.service
+Requires=systemd-networkd-wait-online.service
+
+[Service]
+ExecStart=/usr/bin/docker run --rm --net=host --name=dnsmasq -p 53:53/tcp -p 53:53/udp -v /etc/dnsmasq/dnsmasq.conf:/etc/dnsmasq/dnsmasq.conf:ro --cap-add=NET_ADMIN andyshinn/dnsmasq:2.75 --log-facility=- --conf-file=/etc/dnsmasq/dnsmasq.conf --log-queries -d
+ExecStop=/usr/bin/docker stop dnsmasq
+
+# Ensure log messages are correctly tagged in the system log.
+SyslogIdentifier=dnsmasq
+
+# Auto-Restart the container after a crash.
+Restart=always
+RestartSec=30
+StartLimitBurst=3
+StartLimitIntervalSec=160
+LimitNOFILE=65536
+TasksMax=infinity
+TimeoutSec=30
+
+[Install]
+# make sure service is started after docker is up
+WantedBy=multi-user.target

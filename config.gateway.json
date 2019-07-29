@@ -1,0 +1,97 @@
+{
+	"firewall": {
+			 "modify": {
+					"OPENVPN-CH": {
+							"rule": {
+									"5000": {
+											"action": "modify",
+											"description": "Allow CH clients to access vtun1",
+											"modify": {
+													"table": "2"
+											},
+											"source": {
+													"address": "172.16.60.0/24"
+											}
+									}
+							}
+					}
+			},
+			"source-validation": "loose"	
+	},
+	"interfaces": {
+			"ethernet": {
+					"eth1": {
+							"vif": {
+									"660": {
+											"firewall": {
+													"in": {
+															"modify": "OPENVPN-CH",
+															"name": "LAN_IN"
+													},
+													"local": {
+															"name": "LAN_LOCAL"
+													},
+													"out": {
+															"name": "LAN_OUT"
+													}
+											}
+									}
+							}
+					}
+			},
+			"openvpn": {
+				"vtun1": {
+					"config-file": "/config/openvpn/ch-onion1.nordvpn.com.udp.ovpn",
+					"description": "Onion OpenVPN VPN tunnel"
+				}
+			}
+	},
+	"protocols": {
+			"static": {
+					"table": {
+							"2": {
+									"interface-route": {
+											"0.0.0.0/0": {
+													"next-hop-interface": {
+															"vtun1": "''"
+													}
+											}
+									}
+							}
+					}
+			}
+	},
+	"service": {
+			"nat": {
+					"rule": {
+							"5001": {
+									"description": "Route CH OpenVPN clients",
+									"log": "disable",
+									"outbound-interface": "vtun1",
+									"source": {
+											"address": "172.16.60.0/26"
+									},
+									"type": "masquerade"
+							},
+							"5002": {
+									"description": "Route DMZ clients",
+									"log": "disable",
+									"outbound-interface": "eth0",
+									"source": {
+											"address": "192.168.0.0/16"
+									},
+									"type": "masquerade"
+							},
+							"5003": {
+									"description": "Route all other clients",
+									"log": "disable",
+									"outbound-interface": "eth0",
+									"source": {
+											"address": "10.0.0.0/16"
+									},
+									"type": "masquerade"
+							}
+					}
+			}
+	}
+}

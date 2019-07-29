@@ -1,0 +1,22 @@
+[Unit]
+Description=Nomad
+Documentation=https://nomadproject.io/docs/
+After=download-nomad.service
+Requires=docker.service
+
+[Service]
+KillMode=process
+KillSignal=SIGINT
+ExecStartPre=/bin/sh -c 'until ping -c1 {{ipv4_gateway}}; do sleep 1; done;'
+ExecStart=/opt/bin/nomad agent -config /etc/nomad/nomad.hcl
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=30
+StartLimitBurst=3
+StartLimitIntervalSec=160
+LimitNOFILE=65536
+TasksMax=infinity
+TimeoutSec=30
+
+[Install]
+WantedBy=multi-user.target

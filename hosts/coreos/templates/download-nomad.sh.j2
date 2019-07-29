@@ -1,0 +1,16 @@
+#!/bin/bash
+while ! ping -c 1 -W 1 8.8.8.8; do
+  echo "Waiting for 8.8.8.8 - network interface might be down..."
+  sleep 1
+done
+
+if [ ! -f "/opt/bin/nomad" ]
+then
+  echo "Installing Nomad..."
+  cd /home/core
+  wget https://releases.hashicorp.com/nomad/0.9.3/nomad_0.9.3_linux_amd64.zip
+  mkdir -p /opt/bin
+  unzip -d /opt/bin nomad_0.9.3_linux_amd64.zip
+else
+  echo "Already installed"
+fi

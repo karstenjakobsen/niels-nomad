@@ -1,0 +1,122 @@
+---
+
+- hosts: localhost
+  gather_facts: false
+
+  vars:
+
+    interface_name: ens192
+    ipv4_address: 192.168.10.10
+    ipv4_gateway: 192.168.10.1
+    sshd_port: 34
+    coreos_version: 2135.5.0
+    datacenter_name: nyb1 
+    vm_network: DMZ
+    hostname: nyb1-plt-services-001
+    memory: 12288
+    ignition_filename: ignition.platform-services.json
+    is_nomad_server: false
+    is_consul_server: false
+    meta_map:
+      env: "platform"
+
+    coreos_ignition_file:
+      ignition:
+        version: 2.2.0
+      networkd:
+        units:
+          - contents: "{{ lookup('template', '10-static.network.j2') }}"
+            name: 10-static.network
+      passwd:
+        users:
+          - name: kj
+            sshAuthorizedKeys: 
+              - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCjcbd8KEujzX8cieLbd6TBsRS2mOdGf1FuQNPC22Ucg/qn0/aG8UK3/ZAhMw2RhhVObr5G2gnTxzcmQwDpnZ2rEK3QA2MoYM1NBYFmkqUudZED4Kf/CxBCH51l42Dmux50GMxdNR0bkjSH1R1f8CQwrIpiDXYLncihlXvGZy0IzVGBvML5gIcrIW3LflJu/LyjY7IbvA6t5GCNCnuFV56wUcfhcGMHpyX1If8w5+/DLmTcAS3I0120yWLw3k/+rS/TProJzIbzn9sNaKvsk6dJQw1aOANKSPrZ28//uYhPsq3qTwfhuzYjLEezd+w4uJOF4rKE5/o1r4Y4a1mnCzLtVMSxwUR7tP0ljXztRGovBtbgfEEri8ONpRCWYdHpVqUCaozW+2uQKwoccgZ4SJl3uqx60Xrqao625Mxoc86EnfTlq7N91mJJ3Nc33z+emKRrnE7P0Eh1k/RAW85AXIUDJbt5Fc20ATRiTOVLGpJTkrAphm+JHcaoo+YKzypR3r6upwsJVX1yXa8kBoSGbouAghAuRKx/IgEodSolIKDnq8KagJmBwXG9ussJpYHW607ZEMzNwwsFFEMQxyLzrVDznPNk4C88tyzpnI9Yli54KUGNehFIn0RVyN015T3KpxHVP+iciwBTo7DtDRZyjI8dfbaG3fePVok4K5B4lOVg2w== cardno:000606334270"
+            groups:
+              - sudo
+              - docker            
+      storage:
+        files:
+          - filesystem: root
+            path: "/etc/hostname"
+            mode: 420
+            contents:
+              source: "data:text/plain;charset=utf-8;base64,{{ hostname | b64encode }}"
+          - filesystem: root
+            path: "/etc/profile.d/10-path.sh"
+            mode: 420
+            contents:
+              source: "data:text/plain;charset=utf-8;base64,{{ lookup('template', 'profile.env.j2') | b64encode }}"
+          - filesystem: root
+            path: "/etc/sysctl.d/80-swappiness.conf"
+            mode: 420
+            contents:
+              source: "data:text/plain;charset=utf-8;base64,{{ lookup('template', '80-swappiness.conf.j2') | b64encode }}"
+          - filesystem: root
+            path: "/etc/nomad/nomad.hcl"
+            mode: 420
+            contents:
+              source: "data:text/plain;charset=utf-8;base64,{{ lookup('template', 'nomad.hcl.j2') | b64encode }}"
+          - filesystem: root
+            path: "/etc/dnsmasq/dnsmasq.conf"
+            mode: 420
+            contents:
+              source: "data:text/plain;charset=utf-8;base64,{{ lookup('template', 'dnsmasq.conf.j2') | b64encode }}"
+          - filesystem: root
+            path: "/home/core/download-nomad.sh"
+            mode: 493
+            contents:
+              source: "data:text/plain;charset=utf-8;base64,{{ lookup('template', 'download-nomad.sh.j2') | b64encode }}"
+      systemd:
+        units:
+          - dropins:
+            - contents: "{{ lookup('template', '10-sshd-port.conf.j2') }}"                
+              name: 10-sshd-port.conf
+            enabled: true
+            name: sshd.socket
+          - contents: "{{ lookup('template', 'vmtoolsd.service.j2') }}"      
+            enabled: true
+            name: vmtoolsd.service
+          - contents: "{{ lookup('template', 'dnsmasq.service.j2') }}"      
+            enabled: true
+            name: dnsmasq.service
+          - contents: "{{ lookup('template', 'consul.service.j2') }}"             
+            enabled: true
+            name: consul.service
+          - contents: "{{ lookup('template', 'nomad.service.j2') }}"             
+            enabled: true
+            name: nomad.service
+          - contents: "{{ lookup('template', 'download-nomad.service.j2') }}"             
+            enabled: true
+            name: download-nomad.service
+          - contents: "{{ lookup('template', 'unlink-resolved.service.j2') }}"        
+            enabled: true
+            name: unlink-resolved.service
+          - contents: "{{ lookup('template', 'var-vm-swapfile1.swap.j2') }}"               
+            enabled: true
+            name: var-vm-swapfile1.swap
+          - contents: "{{ lookup('template', 'create-swapfile.service.j2') }}"
+            enabled: true
+            name: create-swapfile.service
+          - enabled: false
+            mask: true
+            name: locksmithd.service
+          - enabled: false
+            mask: true
+            name: update-engine.service
+          - enabled: false
+            mask: true
+            name: systemd-resolved.service          
+
+  tasks:
+
+    - name: "Convert ignition to json"
+      template: 
+        src: coreos_ignition.json.j2 
+        dest: "{{ignition_filename}}"
+
+    - name: Run CoreOS script
+      local_action: "command ./create.sh {{coreos_version}} {{datacenter_name}} {{vm_network}} {{hostname}} {{memory}} {{ignition_filename}}"
+      register: command_output
+
+

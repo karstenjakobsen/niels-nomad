@@ -1,0 +1,72 @@
+# DUMP with mca-ctrl -t dump-cfg > config-modified.json
+configure 
+
+# 1 Setup the VPN tunnels 
+set interfaces openvpn vtun0 config-file /config/openvpn/dk107.nordvpn.com.udp.ovpn 
+set interfaces openvpn vtun0 description 'DK OpenVPN VPN tunnel'
+set interfaces openvpn vtun1 config-file /config/openvpn/ch-onion1.nordvpn.com.udp.ovpn
+set interfaces openvpn vtun1 description 'Onion OpenVPN VPN tunnel'
+commit  
+
+# 2 Route the appropriate devices though the related VPN tunnels
+set service nat rule 5000 description 'DK OpenVPN Clients'  
+set service nat rule 5000 log disable 
+set service nat rule 5000 outbound-interface vtun0 
+set service nat rule 5000 source address 172.16.50.0/24
+set service nat rule 5000 type masquerade
+
+set service nat rule 5001 description 'Onion OpenVPN Clients'  
+set service nat rule 5001 log disable 
+set service nat rule 5001 outbound-interface vtun1
+set service nat rule 5001 source address 172.16.60.0/24
+set service nat rule 5001 type masquerade  
+
+set service nat rule 5002 description 'DMZ clients'
+set service nat rule 5002 log disable 
+set service nat rule 5002 outbound-interface eth0 
+set service nat rule 5002 source address 192.168.0.0/16
+set service nat rule 5002 type masquerade  
+
+set service nat rule 5003 description 'All other clients' 
+set service nat rule 5003 log disable 
+set service nat rule 5003 outbound-interface eth0 
+set service nat rule 5003 source address 10.0.0.0/8
+set service nat rule 5003 type masquerade
+commit
+
+# 3 Create a static route using interface vtun0 as next-hop:    
+set protocols static table 1 interface-route 0.0.0.0/0 next-hop-interface vtun0
+set protocols static table 2 interface-route 0.0.0.0/0 next-hop-interface vtun1
+commit   
+
+# 4 Create a firewall modify rule for each host you want to route through the Open VPN tunnel.   
+set firewall modify DKOPENVPN rule 10 description 'Route DK OpenVPN network to vtun0' 
+set firewall modify DKOPENVPN rule 10 source address 172.16.50.0/24 
+set firewall modify DKOPENVPN rule 10 modify table 1
+set firewall modify ONIONOPENVPN rule 20 description 'Route Onion OpenVPN network to vtun1' 
+set firewall modify ONIONOPENVPN rule 20 source address 172.16.60.0/24 
+set firewall modify ONIONOPENVPN rule 20 modify table 2
+commit   
+
+# 5 Apply the firewall modify rule "in" to your LAN interface.   
+set interfaces ethernet eth1 vif 650 firewall in modify DKOPENVPN
+set interfaces ethernet eth1 vif 660 firewall in modify ONIONOPENVPN
+commit
+
+### this is necessary if only a single WAN is enabled. 
+set firewall source-validation loose 
+
+commit
+
+save 
+
+exit
+
+show interfaces
+
+show nat rules
+
+show interfaces openvpn detail
+
+    show firewall modify statistics
+

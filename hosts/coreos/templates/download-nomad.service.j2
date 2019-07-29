@@ -1,0 +1,11 @@
+[Unit]
+After=systemd-networkd-wait-online.service
+Requires=systemd-networkd-wait-online.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /home/core/download-nomad.sh
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target
