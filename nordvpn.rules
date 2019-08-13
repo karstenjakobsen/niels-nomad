@@ -9,6 +9,13 @@ set interfaces openvpn vtun1 description 'Onion OpenVPN VPN tunnel'
 commit  
 
 # 2 Route the appropriate devices though the related VPN tunnels
+set service nat rule 4999 description 'Route RDP for guest'  
+set service nat rule 4999 log disable 
+set service nat rule 4999 outbound-interface eth0 
+set service nat rule 4999 source address 10.0.30.0/24
+set service nat rule 4999 source port 3389
+set service nat rule 4999 type masquerade
+
 set service nat rule 5000 description 'DK OpenVPN Clients'  
 set service nat rule 5000 log disable 
 set service nat rule 5000 outbound-interface vtun0 

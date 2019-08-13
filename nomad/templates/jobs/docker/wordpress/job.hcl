@@ -39,14 +39,14 @@ job "${job_name}" {
 
       env = {      
         SCHEDULE = "00 03 * * *"
-        DIRS = "/$${NOMAD_JOB_NAME}-$${NOMAD_TASK_NAME}:wordpress"
+        DIRS = "/${volume_name}:wordpress"
       }
       
       config {
-        image = "karstenjakobsen/docker-cron-backup:latest"        
+        image = "karstenjakobsen/docker-cron-backup:latest"     
         volumes = [
-          "/var/backup/$${NOMAD_JOB_NAME}-$${NOMAD_TASK_NAME}-volume:/backup",
-          "/var/persistent-data/kogsbolle_wordpress_core-wordpress-volume:/$${NOMAD_JOB_NAME}-$${NOMAD_TASK_NAME}"
+          "/var/backup/${volume_name}:/backup",
+          "/var/persistent-data/${volume_name}:/${volume_name}"
         ]
       }
 
@@ -65,10 +65,10 @@ job "${job_name}" {
       driver = "docker"
 
       env = {      
-        MYSQL_DATABASE = "wordpressdb"
-        MYSQL_USER = "wpuser"
-        MYSQL_PASSWORD = "dehj7u65ffssss"
-        MYSQL_ROOT_PASSWORD = "nokia920c"
+        MYSQL_DATABASE = "${mysql_database}"
+        MYSQL_USER = "${mysql_user}"
+        MYSQL_PASSWORD = "${mysql_password}"
+        MYSQL_ROOT_PASSWORD = "${mysql_root_password}"
       }
       
       config {
@@ -114,9 +114,9 @@ job "${job_name}" {
 
       env = {      
         WORDPRESS_DB_HOST = "${service_name_mysql}.service.consul:$${NOMAD_PORT_db_mysql}"
-        WORDPRESS_DB_USER = "wpuser"
-        WORDPRESS_DB_PASSWORD = "dehj7u65ffssss"
-        WORDPRESS_DB_NAME = "wordpressdb"
+        WORDPRESS_DB_USER = "${mysql_user}"
+        WORDPRESS_DB_PASSWORD = "${mysql_password}"
+        WORDPRESS_DB_NAME = "${mysql_database}"
       }
       
       config {
@@ -128,7 +128,7 @@ job "${job_name}" {
           "172.17.0.1"
         ]         
         volumes = [
-          "/var/persistent-data/$${NOMAD_JOB_NAME}-$${NOMAD_TASK_NAME}-volume:/var/www/html"
+          "/var/persistent-data/${volume_name}:/var/www/html"
         ]
       }
 
