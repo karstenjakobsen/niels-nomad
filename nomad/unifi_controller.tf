@@ -9,7 +9,7 @@ data "template_file" "unifi_controller" {
   vars = {
     region        = "global"
     datacenters   = "nyb1"
-    image         = "linuxserver/unifi-controller:amd64-5.10.25-ls26"
+    image         = "linuxserver/unifi-controller:amd64-version-6.1.71"
   }
 
 }
