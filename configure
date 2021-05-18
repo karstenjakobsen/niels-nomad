@@ -1,0 +1,41 @@
+configure
+set interfaces openvpn vtun0 config-file /config/openvpn/dk107.nordvpn.com.udp.ovpn
+set interfaces openvpn vtun1 config-file /config/openvpn/dk227.nordvpn.com.tcp443.ovpn
+set interfaces openvpn vtun1 config-file /config/openvpn/ch-onion1.nordvpn.com.udp.ovpn
+set interfaces openvpn vtun0 config-file /config/user-data/vpn.ovpn
+commit
+save
+exit
+
+delete interfaces openvpn vtun0
+cat /var/log/messages
+
+set firewall source-validation disable
+dk231.nordvpn.com.udp1194.ovpn
+
+
+
+
+set interfaces openvpn vtun0 config-file /config/user-data/vpn.ovpn
+
+set service nat rule 5000 description openvpn-host
+set service nat rule 5000 log disable
+set service nat rule 5000 outbound-interface vtun0
+set service nat rule 5000 type masquerade
+
+set service nat rule 5001 description global-nat
+set service nat rule 5001 log disable
+set service nat rule 5001 outbound-interface eth0
+set service nat rule 5001 source address 10.0.50.0/25
+set service nat rule 5001 type masquerade
+
+set protocols static table 2 interface-route 0.0.0.0/0 next-hop-interface vtun0
+
+set firewall modify OPENVPN_ROUTE rule 10 description 'traffic from vlan 50 to vtun0'
+set firewall modify OPENVPN_ROUTE rule 10 modify table 2
+set interfaces ethernet eth1 firewall in modify OPENVPN_ROUTE
+
+
+set interfaces openvpn vtun0 disable
+delete interfaces openvpn vtun0 disable
+
