@@ -53,7 +53,7 @@ job "unifi_controller" {
           "172.17.0.1"
         ]
         volumes = [
-          "/var/persistent-data/$${NOMAD_JOB_NAME}-$${NOMAD_TASK_NAME}-volume:/config"
+          "/var/persistent-data/$${NOMAD_JOB_NAME}-$${NOMAD_TASK_NAME}-volume-1:/config"
         ]
       }
 
